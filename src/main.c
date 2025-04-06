@@ -60,6 +60,11 @@ void do_one_frame(void)
 
 void event(const sapp_event *event)
 {
+    if (event->type == SAPP_EVENTTYPE_KEY_DOWN && !event->key_repeat) {
+        if (event->key_code == SAPP_KEYCODE_F11) {
+            sapp_toggle_fullscreen();
+        }
+    }
 }
 
 void cleanup(void)

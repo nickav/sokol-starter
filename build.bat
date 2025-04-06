@@ -19,8 +19,10 @@ pushd build
     )
 
     cl -nologo %flags% -DDEBUG=1 /I ..\src ..\src\main.c /link %libs% -subsystem:windows -incremental:no -opt:ref -OUT:%exe%
+    IF %errorlevel% NEQ 0 (goto end)
     .\%exe%
 
+:end
 popd
 
 popd
