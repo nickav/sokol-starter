@@ -32,4 +32,6 @@ git submodule init
 
 ### Linux
 
-Coming soon!
+```bash
+./build.sh
+```
