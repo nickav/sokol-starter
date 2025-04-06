@@ -2,6 +2,8 @@
 
 A starter project for using [Sokol](https://github.com/floooh/sokol).
 
+<img src="./tools/preview.png" alt="Preview" />
+
 ## Install
 
 ```bash
