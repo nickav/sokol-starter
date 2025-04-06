@@ -10,6 +10,12 @@ A starter project for using [Sokol](https://github.com/floooh/sokol).
 git clone --recursive https://github.com/nickav/sokol-starter
 ```
 
+If you already cloned the repo, you need to init submodules to get the `sokol-shdc`:
+
+```bash
+git submodule init
+```
+
 ## Build
 
 ### Windows
@@ -18,6 +24,12 @@ git clone --recursive https://github.com/nickav/sokol-starter
 .\build.bat
 ```
 
-### Macos & Linux
+### Macos
+
+```bash
+./build.sh
+```
+
+### Linux
 
 Coming soon!
