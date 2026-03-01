@@ -1,6 +1,9 @@
 #include "third_party/sokol/sokol.h"
 #include "shaders/triangle.glsl.h"
 
+#define impl
+#include "third_party/na/na.h"
+
 static struct {
     sg_pipeline pip;
     sg_bindings bind;
@@ -14,7 +17,7 @@ void init(void)
         .logger.func = slog_func,
     });
 
-    // a vertex buffer with 3 vertices
+    // a vertex buffer with 3 vertices and view for binding
     float vertices[] = {
         // positions            // colors
          0.0f,  0.5f, 0.5f,     1.0f, 0.0f, 0.0f, 1.0f,
@@ -23,7 +26,7 @@ void init(void)
     };
     state.bind.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
         .data = SG_RANGE(vertices),
-        .label = "triangle-vertices"
+        .label = "vertex-buffer"
     });
 
     // create shader from code-generated sg_shader_desc
@@ -39,18 +42,32 @@ void init(void)
                 [ATTR_triangle_color0].format = SG_VERTEXFORMAT_FLOAT4
             }
         },
-        .label = "triangle-pipeline"
+        .label = "triangle-pipeline",
+        .sample_count = 4,
     });
 
     // a pass action to clear framebuffer to black
     state.pass_action = (sg_pass_action) {
-        .colors[0] = { .load_action=SG_LOADACTION_CLEAR, .clear_value={0.0f, 0.0f, 0.0f, 1.0f } }
+        .colors[0] = { .load_action=SG_LOADACTION_CLEAR, .clear_value={0.0f, 0.0f, 0.0f, 1.0f } },
     };
 }
 
-void do_one_frame(void)
+void event(const sapp_event* event)
 {
-    sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = sglue_swapchain() });
+    if (event->type == SAPP_EVENTTYPE_KEY_DOWN && !event->key_repeat) {
+        if (event->key_code == SAPP_KEYCODE_F11) {
+            sapp_toggle_fullscreen();
+        }
+        if (event->key_code == SAPP_KEYCODE_ENTER && (event->modifiers & SAPP_MODIFIER_ALT) != 0) {
+            sapp_toggle_fullscreen();
+        }
+    }
+}
+
+void frame(void)
+{
+    sg_swapchain swapchain = sglue_swapchain();
+    sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = swapchain });
     sg_apply_pipeline(state.pip);
     sg_apply_bindings(&state.bind);
     sg_draw(0, 3, 1);
@@ -58,34 +75,31 @@ void do_one_frame(void)
     sg_commit();
 }
 
-void event(const sapp_event *event)
-{
-    if (event->type == SAPP_EVENTTYPE_KEY_DOWN && !event->key_repeat) {
-        if (event->key_code == SAPP_KEYCODE_F11) {
-            sapp_toggle_fullscreen();
-        }
-    }
-}
-
 void cleanup(void)
 {
     sg_shutdown();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char* argv[]) {
+    (void)argc; (void)argv;
+    
     sapp_run(&(sapp_desc){
         .init_cb = init,
-        .frame_cb = do_one_frame,
-        .event_cb = event,
+        .frame_cb = frame,
         .cleanup_cb = cleanup,
+        .event_cb = event,
+        .width = 1280,
+        .height = 720,
         .high_dpi = true,
+        .sample_count = 4,
         .window_title = "Sokol Starter Pack",
-        .logger = {.func = slog_func},
+        .logger.func = slog_func,
     });
+
+    return 0;
 }
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -93,4 +107,4 @@ int APIENTRY WinMain(HINSTANCE instance, HINSTANCE prev_inst, LPSTR argv, int ar
 {
     return main(0, NULL);
 }
-#endif
+#endif // defined(_WIN32)
