@@ -3073,11 +3073,13 @@ function String string_from_string16(Arena *arena, String16 str) {
         at += encode_size;
     }
 
+    *at = 0;
+
     result.count = at - result.data;
 
     u64 alloc_count = str.count * 3 + 1;
     u64 string_count = result.count;
-    u64 unused_count = alloc_count - string_count;
+    u64 unused_count = alloc_count - string_count - 1;
     arena_pop(arena, unused_count);
 
     return result;
