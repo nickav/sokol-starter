@@ -80,9 +80,10 @@ void cleanup(void)
     sg_shutdown();
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     (void)argc; (void)argv;
-    
+
     sapp_run(&(sapp_desc){
         .init_cb = init,
         .frame_cb = frame,
@@ -100,11 +101,30 @@ int main(int argc, char* argv[]) {
 }
 
 #if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-int APIENTRY WinMain(HINSTANCE instance, HINSTANCE prev_inst, LPSTR argv, int argc)
+int APIENTRY WinMain(HINSTANCE instance, HINSTANCE prev_inst, LPSTR cmd, int show)
 {
-    return main(0, NULL);
+    void *kernel32 = LoadLibraryA("kernel32.dll");
+    void *shell32  = LoadLibraryA("shell32.dll");
+
+    typedef wchar_t* Win32_GetCommandLineW(void);
+    typedef wchar_t** Win32_CommandLineToArgvW(const wchar_t*, int*);
+
+    Win32_GetCommandLineW    *GetCommandLineW    = (Win32_GetCommandLineW*)  GetProcAddress(kernel32, "GetCommandLineW");
+    Win32_CommandLineToArgvW *CommandLineToArgvW = (Win32_CommandLineToArgvW*)GetProcAddress(shell32, "CommandLineToArgvW");
+
+    int argc = 0;
+    wchar_t **wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    Arena *arena = arena_alloc(Megabytes(1));
+
+    char **argv = PushArray(arena, char*, argc);
+    for (int i = 0; i < argc; i++) {
+        String16 arg16 = string16_from_cstr((u16 *)wargv[i]);
+        String   arg8  = string_from_string16(arena, arg16);
+        argv[i] = string_to_cstr(arena, arg8);
+    }
+
+    LocalFree(wargv);
+
+    return main(argc, argv);
 }
 #endif // defined(_WIN32)
