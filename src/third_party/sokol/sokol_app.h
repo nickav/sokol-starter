@@ -5086,7 +5086,10 @@ _SOKOL_PRIVATE NSInteger _sapp_macos_max_fps(void) {
     if (@available(macOS 12.0, *)) {
         return [NSScreen.mainScreen maximumFramesPerSecond];
     }
-    return 60;
+    CGDisplayModeRef mode = CGDisplayCopyDisplayMode(CGMainDisplayID());
+    double refresh = CGDisplayModeGetRefreshRate(mode);
+    CGDisplayModeRelease(mode);
+    return (refresh > 0) ? (NSInteger)refresh : 60;
 }
 
 #if defined(SOKOL_METAL)
@@ -5954,6 +5957,8 @@ _SOKOL_PRIVATE void _sapp_macos_frame(void) {
     [_sapp.macos.window makeFirstResponder:_sapp.macos.view];
     if (_sapp.center) {
         [_sapp.macos.window center];
+    } else {
+        [_sapp.macos.window cascadeTopLeftFromPoint:NSMakePoint(20, 20)];
     }
     _sapp.valid = true;
     NSApp.activationPolicy = NSApplicationActivationPolicyRegular;
