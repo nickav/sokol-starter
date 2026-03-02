@@ -5079,7 +5079,10 @@ _SOKOL_PRIVATE void _sapp_vk_frame(void) {
 #define _SAPP_MACOS_MTL_MAX_FRAME_DURATION_IN_SECONDS (0.25)
 
 _SOKOL_PRIVATE NSInteger _sapp_macos_max_fps(void) {
-    return [NSScreen.mainScreen maximumFramesPerSecond];
+    if (@available(macOS 12.0, *)) {
+        return [NSScreen.mainScreen maximumFramesPerSecond];
+    }
+    return 60;
 }
 
 #if defined(SOKOL_METAL)
@@ -5184,17 +5187,23 @@ _SOKOL_PRIVATE double _sapp_macos_mtl_timing_frame_duration(void) {
     return _sapp.macos.mtl.timing.frame_duration_sec;
 }
 
+_SOKOL_PRIVATE void _sapp_macos_mtl_start_fallback_timer(void);
+
 _SOKOL_PRIVATE void _sapp_macos_mtl_start_display_link(void) {
     // NOTE: CADisplayLink is only available since macOS 14.0
     SOKOL_ASSERT(nil == _sapp.macos.mtl.display_link);
     SOKOL_ASSERT(nil == _sapp.macos.mtl.fallback_timer);
     SOKOL_ASSERT(nil != _sapp.macos.view);
-    NSInteger max_fps = _sapp_macos_max_fps();
-    _sapp.macos.mtl.display_link = [_sapp.macos.view displayLinkWithTarget:_sapp.macos.view selector:@selector(displayLinkFired:)];
-    const float preferred_fps = max_fps / _sapp.swap_interval;
-    const CAFrameRateRange frame_rate_range = { preferred_fps, preferred_fps, preferred_fps };
-    _sapp.macos.mtl.display_link.preferredFrameRateRange = frame_rate_range;
-    [_sapp.macos.mtl.display_link addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    if (@available(macOS 14.0, *)) {
+        NSInteger max_fps = _sapp_macos_max_fps();
+        _sapp.macos.mtl.display_link = [_sapp.macos.view displayLinkWithTarget:_sapp.macos.view selector:@selector(displayLinkFired:)];
+        const float preferred_fps = max_fps / _sapp.swap_interval;
+        const CAFrameRateRange frame_rate_range = { preferred_fps, preferred_fps, preferred_fps };
+        _sapp.macos.mtl.display_link.preferredFrameRateRange = frame_rate_range;
+        [_sapp.macos.mtl.display_link addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    } else {
+        _sapp_macos_mtl_start_fallback_timer();
+    }
 }
 
 _SOKOL_PRIVATE void _sapp_macos_mtl_stop_display_link(void) {
@@ -5232,10 +5241,13 @@ _SOKOL_PRIVATE void _sapp_macos_mtl_transition_to_occluded(void) {
 }
 
 _SOKOL_PRIVATE void _sapp_macos_mtl_transition_to_visible(void) {
-    if (!_sapp_macos_mtl_display_link_active()) {
-        _sapp_macos_mtl_stop_fallback_timer();
-        _sapp_macos_mtl_start_display_link();
+    if (@available(macOS 14.0, *)) {
+        if (!_sapp_macos_mtl_display_link_active()) {
+            _sapp_macos_mtl_stop_fallback_timer();
+            _sapp_macos_mtl_start_display_link();
+        }
     }
+    // on macOS < 14.0: fallback timer runs continuously, nothing to transition
 }
 
 _SOKOL_PRIVATE void _sapp_macos_mtl_init(void) {

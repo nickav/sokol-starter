@@ -61,11 +61,20 @@ void event(const sapp_event* event)
         if (event->key_code == SAPP_KEYCODE_ENTER && (event->modifiers & SAPP_MODIFIER_ALT) != 0) {
             sapp_toggle_fullscreen();
         }
+
+        if (event->key_code == SAPP_KEYCODE_Q && (event->modifiers & SAPP_MODIFIER_SUPER) != 0) {
+            sapp_request_quit();
+        }
     }
 }
 
 void frame(void)
 {
+    state.pass_action.colors[0].clear_value.r += 1.0/60.0;
+    if (state.pass_action.colors[0].clear_value.r > 1.0) {
+        state.pass_action.colors[0].clear_value.r = 0;
+    }
+
     sg_swapchain swapchain = sglue_swapchain();
     sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = swapchain });
     sg_apply_pipeline(state.pip);

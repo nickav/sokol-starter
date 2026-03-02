@@ -15,6 +15,8 @@ if [ ! -e "./src/third_party/sokol/build/" ]; then
     ./src/third_party/sokol/build_macos.sh
 fi
 
+# ./src/third_party/sokol/build_macos.sh
+
 mkdir -p build
 pushd build
 
