@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
         .width = 1280,
         .height = 720,
         .high_dpi = true,
+        .center = true,
         .sample_count = 4,
         .window_title = "Sokol Starter Pack",
         .logger.func = slog_func,

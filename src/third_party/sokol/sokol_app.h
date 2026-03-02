@@ -160,6 +160,7 @@
     key repeat flag     | YES     | YES   | YES   | ---   | ---     |  YES
     windowed            | YES     | YES   | YES   | ---   | ---     |  YES
     fullscreen          | YES     | YES   | YES   | YES   | YES     |  YES(3)
+    center              | YES     | YES   | NO    | NO    | NO      |  NO
     mouse hide          | YES     | YES   | YES   | ---   | ---     |  YES
     mouse lock          | YES     | YES   | YES   | ---   | ---     |  YES
     set cursor type     | YES     | YES   | YES   | ---   | ---     |  YES
@@ -2044,6 +2045,7 @@ typedef struct sapp_desc {
     int swap_interval;                  // the preferred swap interval (ignored on some platforms)
     bool high_dpi;                      // whether the rendering canvas is full-resolution on HighDPI displays
     bool fullscreen;                    // whether the window should be created in fullscreen mode
+    bool center;                        // whether the window should be appear initially centered
     bool alpha;                         // whether the framebuffer should have an alpha channel (ignored on some platforms)
     const char* window_title;           // the window title as UTF-8 encoded string
     bool enable_clipboard;              // enable clipboard access, default is false
@@ -3309,6 +3311,7 @@ typedef struct {
     sapp_desc desc;
     bool valid;
     bool fullscreen;
+    bool center;
     bool first_frame;
     bool init_called;
     bool cleanup_called;
@@ -3634,6 +3637,7 @@ _SOKOL_PRIVATE void _sapp_init_state(const sapp_desc* desc) {
     _sapp.desc.window_title = _sapp.window_title;
     _sapp.dpi_scale = 1.0f;
     _sapp.fullscreen = _sapp.desc.fullscreen;
+    _sapp.center = _sapp.desc.center;
     _sapp.mouse.shown = true;
     #if defined(_SAPP_USE_FILTERED_FRAME_TIMING)
     _sapp_timing_init(&_sapp.timing);
@@ -5948,7 +5952,9 @@ _SOKOL_PRIVATE void _sapp_macos_frame(void) {
     #endif
     _sapp.macos.window.contentView = _sapp.macos.view;
     [_sapp.macos.window makeFirstResponder:_sapp.macos.view];
-    [_sapp.macos.window center];
+    if (_sapp.center) {
+        [_sapp.macos.window center];
+    }
     _sapp.valid = true;
     NSApp.activationPolicy = NSApplicationActivationPolicyRegular;
     if (_sapp.fullscreen) {
@@ -9919,26 +9925,18 @@ _SOKOL_PRIVATE void _sapp_win32_create_window(void) {
     if (_sapp.fullscreen) {
         _sapp_win32_set_fullscreen(_sapp.fullscreen, SWP_HIDEWINDOW);
         _sapp_win32_update_dimensions();
-    }
-
-    // NOTE(nick): center window
-    {
-        HWND hwnd = _sapp.win32.hwnd;
-        int width = _sapp.framebuffer_width;
-        int height = _sapp.framebuffer_height;
-
-        HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
-
+    } else if (_sapp.center) {
         MONITORINFO info = {0};
         info.cbSize = sizeof(MONITORINFO);
-        GetMonitorInfoW(monitor, &info);
+        GetMonitorInfoW(_sapp.win32.hmonitor, &info);
         int monitor_width = info.rcMonitor.right - info.rcMonitor.left;
         int monitor_height = info.rcMonitor.bottom - info.rcMonitor.top;
 
+        int width = _sapp.framebuffer_width;
+        int height = _sapp.framebuffer_height;
         int center_x = (monitor_width - width) / 2;
         int center_y = (monitor_height - height) / 2;
-
-        SetWindowPos(hwnd, HWND_TOP, center_x, center_y, width, height, SWP_NOOWNERZORDER);
+        SetWindowPos(_sapp.win32.hwnd, HWND_TOP, center_x, center_y, width, height, SWP_NOOWNERZORDER);
     }
 
     ShowWindow(_sapp.win32.hwnd, SW_SHOW);
